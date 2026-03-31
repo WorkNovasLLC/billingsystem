@@ -12,23 +12,8 @@ const PORT = process.env.PORT || 5001;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'worknovas_billing_secret_key_2024';
 
 // Middleware
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5001',
-  'https://billingsystem-jby4.onrender.com'
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not ' +
-        'allow access from the specified Origin.';
-      return callback(null, true); // Still allow for now or you can return Error
-    }
-    return callback(null, true);
-  },
+  origin: true, // Allow all origins and reflect back the requester's origin
   credentials: true
 }));
 app.use((req, res, next) => {

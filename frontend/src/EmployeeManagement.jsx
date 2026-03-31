@@ -11,6 +11,10 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editPay, setEditPay] = useState('');
+  
+  // Custom Modal States
+  const [deleteModal, setDeleteModal] = useState({ show: false, id: null, name: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleAddEmployee = async (e) => {
     e.preventDefault();
@@ -57,15 +61,37 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete ${name}? This action cannot be undone.`)) return;
+  const handleDelete = async () => {
+    if (!deleteModal.id) return;
+    setIsDeleting(true);
     try {
-      await axios.delete(`${API_BASE}/employees/${id}`, getHeaders());
+      await axios.delete(`${API_BASE}/employees/${deleteModal.id}`, getHeaders());
+      const removedName = deleteModal.name;
+      setDeleteModal({ show: false, id: null, name: '' });
       onRefresh();
-      toast.success(`${name} removed`);
+      
+      // Show centered success toast
+      toast.success(`${removedName} removed!`, {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#1e293b',
+          color: '#fff',
+          fontWeight: '700',
+          borderRadius: '16px',
+          padding: '16px 24px',
+          boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+        },
+        iconTheme: {
+          primary: '#10b981',
+          secondary: '#fff',
+        },
+      });
     } catch (err) {
       console.error('Error deleting employee:', err);
       toast.error('Failed to delete employee');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -199,7 +225,7 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
                   ) : (
                     <div className="flex justify-end gap-2">
                       <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-50" onClick={() => startEdit(emp)}><Edit2 size={16} /></button>
-                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-50" onClick={() => handleDelete(emp.id, emp.name)}><Trash2 size={16} /></button>
+                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-50" onClick={() => setDeleteModal({ show: true, id: emp.id, name: emp.name })}><Trash2 size={16} /></button>
                     </div>
                   )}
                 </td>
@@ -212,6 +238,40 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Centered Deletion Confirmation Modal */}
+      {deleteModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 translate-y-0">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => !isDeleting && setDeleteModal({ show: false, id: null, name: '' })}></div>
+          <div className="relative bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 fade-in duration-300 border border-slate-100">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mb-6">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-800 mb-3">Delete employee?</h3>
+            <p className="text-slate-500 leading-relaxed mb-8">
+              Are you sure you want to remove <span className="font-bold text-slate-800">{deleteModal.name}</span>? This action is permanent and cannot be reversed.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                className="flex-1 px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-2xl transition-all disabled:opacity-50"
+                onClick={() => setDeleteModal({ show: false, id: null, name: '' })}
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="flex-1 px-6 py-3.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl shadow-lg shadow-red-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
