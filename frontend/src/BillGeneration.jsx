@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import toast from 'react-hot-toast';
 import { API_BASE } from './App';
 
 const getNewInvoiceId = () => {
@@ -23,6 +24,20 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
   const [hoursData, setHoursData] = useState({}); // { empId: hours }
   const [invoiceNumber, setInvoiceNumber] = useState(getNewInvoiceId());
   const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState({});
+
+  React.useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+        const res = await axios.get(`${API_BASE}/settings`, getHeaders());
+        setSettings(res.data);
+    } catch (err) {
+        console.error('Error fetching settings:', err);
+    }
+  };
 
   const toggleEmployee = (emp) => {
     const isSelected = selectedEmployees.find(e => e.id === emp.id);
@@ -58,56 +73,133 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
 
   const generateAndSaveInvoice = async () => {
     if (selectedEmployees.length === 0) {
-      alert("Please select at least one employee.");
+      toast.error("Please select at least one employee.");
       return;
     }
 
     setLoading(true);
     try {
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
       
-      // Branding / Header
-      doc.setFontSize(22);
-      doc.setTextColor(99, 102, 241);
-      doc.text("WorkNovas LLC", 14, 20);
+      // 1. Logo
+      try {
+        const logoUrl = `${API_BASE.replace('/api', '')}/images/logo.svg`;
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = logoUrl;
+        await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+        
+        if (img.complete && img.naturalWidth > 0) {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const pngData = canvas.toDataURL('image/png');
+            doc.addImage(pngData, 'PNG', margin, 10, 25, 25);
+        }
+      } catch (e) { 
+        console.error("Logo translation failed:", e); 
+      }
+
+      // 2. Company Branding (Logo + Name next to it)
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(37, 99, 235); // Blue 600
+      doc.text(settings.company_name || "WorkNovas LLC", 44, 20);
       
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(30, 58, 138); // Blue 900
+      doc.text("Streamlining technology, driving results", 44, 25);
+
+      // 3. Company Address (Below Branding)
       doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text(`Invoice #: ${invoiceNumber}`, 14, 28);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 33);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      const addrLines = (settings.company_address || "").split('\n');
+      doc.text(addrLines, margin, 45);
+
+      // 3. Invoice Label and Info
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Invoice", margin, 65);
       
-      // Table Data
-      const tableRows = selectedEmployees.map(emp => [
-        `#00${emp.id}`,
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const invoiceInfoY = 75;
+      doc.text(`Invoice #: ${invoiceNumber}`, margin, invoiceInfoY);
+      doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, margin, invoiceInfoY + 5);
+      doc.text(`Terms: ${settings.terms || 'Net-30'}`, margin, invoiceInfoY + 10);
+      
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+      doc.text(`Due Date: ${dueDate.toLocaleDateString()}`, margin, invoiceInfoY + 15);
+      doc.text(`Invoice Month: ${new Date().toLocaleString('default', { month: 'long' })} ${new Date().getFullYear()}`, margin, invoiceInfoY + 20);
+
+      // 4. Bill To (Top Right)
+      const billToX = 110;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Bill To:", billToX, 65);
+      doc.setFont("helvetica", "normal");
+      doc.text((settings.bill_to || "").split('\n'), billToX, 70);
+
+      // 5. Remit To (Red Section)
+      doc.setTextColor(220, 38, 38); // Red
+      doc.setFont("helvetica", "bold");
+      doc.text("Remit to:", margin, 110);
+      doc.setFontSize(9);
+      const remitLines = (settings.remit_to || "").split('\n');
+      doc.text(remitLines, margin, 115);
+      doc.setTextColor(0, 0, 0); // Reset to black
+
+      // 6. Table
+      const tableRows = selectedEmployees.map((emp, index) => [
+        index + 1,
         emp.name,
-        `$${Number(emp.hourly_pay).toFixed(2)}/hr`,
         hoursData[emp.id] || 0,
+        `$${Number(emp.hourly_pay).toFixed(2)}`,
         `$${calculateTotal(emp)}`
       ]);
 
       autoTable(doc, {
-        startY: 40,
-        head: [['ID', 'Employee Name', 'Hourly Rate', 'Hours Worked', 'Subtotal']],
+        startY: 150,
+        head: [['Sr.', 'Name', 'Qty', 'Rate ($)', 'Amount ($)']],
         body: tableRows,
-        foot: [['', '', '', 'GRAND TOTAL:', `$${calculateGrandTotal()}`]],
-        theme: 'grid',
-        headStyles: { fillColor: [99, 102, 241] },
-        footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' }
+        theme: 'plain',
+        headStyles: { fontStyle: 'bold', borderBottom: 1, borderColor: [200, 200, 200] },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            0: { cellWidth: 15 },
+            2: { cellWidth: 20, halign: 'center' },
+            3: { cellWidth: 30, halign: 'right' },
+            4: { cellWidth: 35, halign: 'right' }
+        },
+        didDrawPage: (data) => {
+            // Footer logic if needed
+        }
       });
 
-      // Output as PDF base64 string for storage
-      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      const finalY = doc.lastAutoTable.finalY + 10;
+      
+      // 7. Grand Total
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.text("Total Amount Due", 130, finalY);
+      doc.text(`$ ${calculateGrandTotal()}`, 180, finalY, { align: 'right' });
 
-      // Save to Database
+      // Output and Save
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
       await axios.post(`${API_BASE}/invoices`, {
         invoice_number: invoiceNumber,
         pdf_blob: pdfBase64
       }, getHeaders());
 
-      // Download PDF
       doc.save(`${invoiceNumber}.pdf`);
-
-      alert("Invoice generated, downloaded and saved to database successfully.");
+      toast.success("Invoice generated and saved");
       
       // Reset
       setSelectedEmployees([]);
@@ -242,7 +334,7 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
 
         .emp-select-card {
           padding: 1rem;
-          background: rgba(255, 255, 255, 0.03);
+          background: #ffffff;
           border: 1px solid var(--glass-border);
           border-radius: 12px;
           display: flex;
@@ -252,11 +344,11 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
           transition: all 0.2s;
         }
 
-        .emp-select-card:hover { background: rgba(255, 255, 255, 0.08); }
+        .emp-select-card:hover { background: #f8fafc; border-color: var(--primary); }
         
         .emp-select-card.selected {
           border-color: var(--primary);
-          background: rgba(99, 102, 241, 0.1);
+          background: #eff6ff;
         }
 
         .emp-name { font-weight: 600; font-size: 0.95rem; }

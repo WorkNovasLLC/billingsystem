@@ -6,8 +6,10 @@ import {
   Calendar, 
   Hash, 
   ExternalLink,
-  History
+  History,
+  Trash2
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { API_BASE } from './App';
 
 const InvoiceHistory = ({ getHeaders }) => {
@@ -45,7 +47,19 @@ const InvoiceHistory = ({ getHeaders }) => {
       link.remove();
     } catch (err) {
       console.error("Download failed:", err);
-      alert("Failed to download invoice.");
+      toast.error("Failed to download invoice.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm(`Are you sure you want to delete invoice ${id}? This action cannot be undone.`)) return;
+    try {
+      await axios.delete(`${API_BASE}/invoices/${id}`, getHeaders());
+      fetchInvoices();
+      toast.success("Invoice deleted");
+    } catch (err) {
+      console.error("Delete failed:", err);
+      toast.error("Failed to delete invoice.");
     }
   };
 
@@ -61,38 +75,58 @@ const InvoiceHistory = ({ getHeaders }) => {
       </div>
 
       <div className="glass-effect history-container">
-        {invoices.length > 0 ? (
-          <table className="modern-table">
-            <thead>
-              <tr>
-                <th><Hash size={14} /> ID</th>
-                <th><Calendar size={14} /> Created Date</th>
-                <th><ExternalLink size={14} /> Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
+        <table className="modern-table">
+          <thead>
+            <tr>
+              <th><Hash size={14} /> ID</th>
+              <th><Calendar size={14} /> Created Date</th>
+              <th><ExternalLink size={14} /> Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              [1, 2, 3, 4, 5].map((i) => (
+                <tr key={i}>
+                  <td><div className="skeleton" style={{ width: '150px', height: '20px' }}></div></td>
+                  <td><div className="skeleton" style={{ width: '100px', height: '20px' }}></div></td>
+                  <td><div className="skeleton" style={{ width: '120px', height: '20px' }}></div></td>
+                </tr>
+              ))
+            ) : invoices.length > 0 ? (
+              invoices.map((inv) => (
                 <tr key={inv.invoice_number}>
                   <td><span className="inv-id">{inv.invoice_number}</span></td>
                   <td className="inv-date">{new Date(inv.created_at).toLocaleDateString()}</td>
                   <td>
-                    <button 
-                      className="btn-action glass-effect" 
-                      onClick={() => downloadBlob(inv.invoice_number)}
-                    >
-                      <Download size={16} /> Download PDF
-                    </button>
+                    <div className="history-actions">
+                      <button 
+                        className="btn-action glass-effect" 
+                        onClick={() => downloadBlob(inv.invoice_number)}
+                      >
+                        <Download size={16} /> Download PDF
+                      </button>
+                      <button 
+                        className="btn-icon delete" 
+                        onClick={() => handleDelete(inv.invoice_number)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="empty-history-state">
-            <History size={64} color="#94a3b8" strokeWidth={1} />
-            <p>No invoices generated yet.</p>
-          </div>
-        )}
+              ))
+            ) : (
+                <tr>
+                    <td colSpan="3">
+                        <div className="empty-history-state">
+                            <History size={64} color="#94a3b8" strokeWidth={1} />
+                            <p>No invoices generated yet.</p>
+                        </div>
+                    </td>
+                </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       <style>{`
@@ -108,6 +142,7 @@ const InvoiceHistory = ({ getHeaders }) => {
           align-items: center;
           gap: 8px;
           padding: 8px 16px;
+          background: var(--primary);
           color: white;
           font-weight: 600;
           font-size: 0.85rem;
@@ -115,9 +150,31 @@ const InvoiceHistory = ({ getHeaders }) => {
         }
 
         .btn-action:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: var(--primary);
-          color: var(--primary);
+          background: var(--primary-hover);
+          color: white;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-action.glass-effect { border: 1px solid var(--glass-border); }
+        .history-actions { display: flex; gap: 12px; align-items: center; }
+
+        .btn-icon {
+          background: transparent;
+          border: 1px solid transparent;
+          padding: 8px;
+          border-radius: 10px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--text-muted);
+        }
+
+        .btn-icon.delete:hover { 
+          background: rgba(239, 68, 68, 0.1); 
+          color: #ef4444; 
+          border-color: #ef4444; 
         }
 
         .empty-history-state {

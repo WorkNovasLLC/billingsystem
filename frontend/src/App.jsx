@@ -9,11 +9,14 @@ import {
   ChevronRight,
   TrendingUp,
   Briefcase,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
 import EmployeeManagement from './EmployeeManagement';
 import BillGeneration from './BillGeneration';
 import InvoiceHistory from './InvoiceHistory';
+import OtherInfo from './OtherInfo';
 import Login from './Login';
 
 const API_BASE = 'http://localhost:5001/api';
@@ -25,6 +28,7 @@ function App() {
   const [employees, setEmployees] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
 
   useEffect(() => {
     checkAuth();
@@ -66,6 +70,7 @@ function App() {
   });
 
   const fetchEmployees = async () => {
+    setLoadingEmployees(true);
     try {
       const response = await axios.get(`${API_BASE}/employees`, getHeaders());
       setEmployees(response.data);
@@ -74,6 +79,8 @@ function App() {
       if (err.response?.status === 403 || err.response?.status === 401) {
         handleLogout();
       }
+    } finally {
+      setLoadingEmployees(false);
     }
   };
 
@@ -89,18 +96,21 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'employees':
-        return <EmployeeManagement employees={employees} onRefresh={fetchEmployees} getHeaders={getHeaders} />;
+        return <EmployeeManagement employees={employees} onRefresh={fetchEmployees} getHeaders={getHeaders} loading={loadingEmployees} />;
       case 'bill':
         return <BillGeneration employees={employees} onRefresh={fetchEmployees} getHeaders={getHeaders} />;
       case 'history':
         return <InvoiceHistory getHeaders={getHeaders} />;
+      case 'settings':
+        return <OtherInfo getHeaders={getHeaders} />;
       default:
-        return <DashboardStats employees={employees} setActiveTab={setActiveTab} />;
+        return <DashboardStats employees={employees} setActiveTab={setActiveTab} loading={loadingEmployees} />;
     }
   };
 
   return (
     <div className="app-layout">
+      <Toaster position="top-right" reverseOrder={false} />
       {/* Sidebar */}
       <aside className="sidebar glass-effect">
         <div className="logo">
@@ -132,6 +142,12 @@ function App() {
             onClick={() => setActiveTab('history')}
           >
             <History size={20} /> Invoice History
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <Settings size={20} /> Other Info
           </button>
         </nav>
 
@@ -186,13 +202,13 @@ function App() {
           font-size: 1.5rem;
           font-weight: 800;
           margin-bottom: 3rem;
-          background: linear-gradient(to right, #6366f1, #ec4899);
+          background: linear-gradient(to right, #2563eb, #3b82f6);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .logo-icon {
-          background: rgba(255, 255, 255, 0.05);
+          background: white;
           padding: 10px;
           border-radius: 12px;
           display: flex;
@@ -224,8 +240,8 @@ function App() {
         }
 
         .nav-item:hover {
-          background: var(--glass);
-          color: white;
+          background: rgba(37, 99, 235, 0.05);
+          color: var(--primary);
           transform: translateX(5px);
         }
 
@@ -294,9 +310,7 @@ function App() {
         .page-title {
           font-size: 1.5rem;
           font-weight: 700;
-          background: linear-gradient(to right, #fff, #94a3b8);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: var(--text-main);
         }
 
         .content-scrollable {
@@ -309,9 +323,9 @@ function App() {
         .content-scrollable::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
 
         .btn-secondary {
-            background: var(--glass);
+            background: white;
             border: 1px solid var(--glass-border);
-            color: white;
+            color: var(--text-main);
             padding: 8px 16px;
             font-weight: 500;
         }
@@ -329,7 +343,7 @@ function App() {
   );
 }
 
-const DashboardStats = ({ employees, setActiveTab }) => {
+const DashboardStats = ({ employees, setActiveTab, loading }) => {
   return (
     <div className="dashboard-grid">
       <div className="stat-card glass-effect animate-up">
@@ -337,8 +351,12 @@ const DashboardStats = ({ employees, setActiveTab }) => {
           <div className="stat-icon-bg purple"><Users size={24} /></div>
           <span className="stat-label">Total Employees</span>
         </div>
-        <div className="stat-value">{employees.length}</div>
-        <div className="stat-footer">Registered workforce</div>
+        <div className="stat-value">
+          {loading ? <div className="skeleton" style={{ width: '60px', height: '48px' }}></div> : employees.length}
+        </div>
+        <div className="stat-footer">
+          {loading ? <div className="skeleton" style={{ width: '120px', height: '16px', marginTop: '4px' }}></div> : 'Registered workforce'}
+        </div>
       </div>
 
       <div className="stat-card glass-effect animate-up" style={{ animationDelay: '0.1s' }}>
@@ -346,8 +364,12 @@ const DashboardStats = ({ employees, setActiveTab }) => {
           <div className="stat-icon-bg blue"><FileText size={24} /></div>
           <span className="stat-label">Invoices Generated</span>
         </div>
-        <div className="stat-value">--</div>
-        <div className="stat-footer">Total historical bills</div>
+        <div className="stat-value">
+           {loading ? <div className="skeleton" style={{ width: '60px', height: '48px' }}></div> : '--'}
+        </div>
+        <div className="stat-footer">
+          {loading ? <div className="skeleton" style={{ width: '120px', height: '16px', marginTop: '4px' }}></div> : 'Total historical bills'}
+        </div>
       </div>
 
       <div className="action-card glass-effect animate-up" onClick={() => setActiveTab('bill')} style={{ animationDelay: '0.2s' }}>
@@ -397,12 +419,14 @@ const DashboardStats = ({ employees, setActiveTab }) => {
 
         .action-card {
           grid-column: span 1;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(236, 72, 153, 0.2));
+          background: linear-gradient(135deg, #eff6ff, #dbeafe);
+          border: 1px solid #bfdbfe;
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 2rem;
           cursor: pointer;
+          color: var(--text-main);
         }
 
         .action-card h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }

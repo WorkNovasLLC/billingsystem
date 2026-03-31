@@ -22,6 +22,7 @@ app.use((req, res, next) => {
 });
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+app.use('/images', express.static('images'));
 
 // Database Initialization (Neon/PostgreSQL)
 // This will read from DATABASE_URL in your .env file
@@ -70,6 +71,11 @@ const initializeDB = async () => {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS "session" (
                 "sid" varchar NOT NULL COLLATE "default",
                 "sess" json NOT NULL,
@@ -96,6 +102,23 @@ const initializeDB = async () => {
 
       console.log('Default PG admins created.');
     }
+
+    // Seed default settings
+    const settingsCount = await pool.query('SELECT COUNT(*) FROM settings');
+    if (parseInt(settingsCount.rows[0].count) === 0) {
+        const defaults = {
+            company_name: 'WorkNovas LLC',
+            company_address: '1117 Whitmore St, #A, Monterey Park, CA 91755',
+            bill_to: 'Accounts Payable- Infogain Corporation\n485, Alberto Way Los Gatos, CA 95032',
+            remit_to: 'For ACH Payment Account Name: WorkNovas, LLC\nBank Name: Choice Financial Group\nRouting: 091311229\nAccount Number: 202351879486\nRemittance advised to be sent: account@worknovasllc.com',
+            terms: 'Net-30'
+        };
+        for (const [key, value] of Object.entries(defaults)) {
+            await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2)', [key, value]);
+        }
+        console.log('Default settings seeded.');
+    }
+
     console.log('PostgreSQL Database connected and initialized.');
   } catch (err) {
     console.error('Database connection failed:', err.message);
@@ -166,6 +189,29 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
+// Settings Endpoints
+app.get('/api/settings', authenticate, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM settings');
+    const settings = result.rows.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/settings', authenticate, async (req, res) => {
+  const settings = req.body; // { key: value }
+  try {
+    for (const [key, value] of Object.entries(settings)) {
+      await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2', [key, value]);
+    }
+    res.json({ message: 'Settings updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Protected Routes ---
 
 // Add Employee
@@ -210,6 +256,20 @@ app.put('/api/employees/:id', authenticate, async (req, res) => {
   }
 });
 
+// Delete Employee
+app.delete('/api/employees/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM employees WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+    res.json({ message: 'Employee deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Save Invoice (Blob/Bytea)
 app.post('/api/invoices', authenticate, async (req, res) => {
   const { invoice_number, pdf_blob } = req.body;
@@ -249,6 +309,20 @@ app.get('/api/invoices/:id', async (req, res) => {
 
     res.contentType('application/pdf');
     res.send(row.invoice_blob);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete Invoice
+app.delete('/api/invoices/:id', authenticate, async (req, res) => {
+  const { id } = req.params; // invoice_number
+  try {
+    const result = await pool.query('DELETE FROM invoices WHERE invoice_number = $1', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+    res.json({ message: 'Invoice deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

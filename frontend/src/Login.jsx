@@ -88,7 +88,7 @@ const Login = ({ onLogin }) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
           padding: 2rem;
         }
 
@@ -96,7 +96,10 @@ const Login = ({ onLogin }) => {
           width: 100%;
           max-width: 440px;
           padding: 3rem;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          background: white;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+          border-radius: 20px;
+          border: 1px solid #e2e8f0;
           animation: slideUpFade 0.6s ease-out;
         }
 
@@ -111,7 +114,7 @@ const Login = ({ onLogin }) => {
         }
 
         .brand-logo {
-          background: rgba(99, 102, 241, 0.1);
+          background: #eff6ff;
           width: 64px;
           height: 64px;
           border-radius: 16px;
@@ -119,10 +122,10 @@ const Login = ({ onLogin }) => {
           align-items: center;
           justify-content: center;
           margin: 0 auto 1.5rem;
-          border: 1px solid var(--glass-border);
+          border: 1px solid #bfdbfe;
         }
 
-        .brand h2 { font-size: 1.75rem; margin-bottom: 0.5rem; }
+        .brand h2 { font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--text-main); }
         .brand p { color: var(--text-muted); font-size: 0.95rem; }
 
         .error-badge {
