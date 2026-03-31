@@ -29,28 +29,31 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card glass-effect">
-        <div className="brand">
-          <div className="brand-logo"><Lock size={32} color="#6366f1" /></div>
-          <h2>Admin Portal</h2>
-          <p>Please authenticate to access the billing dashboard.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-8 font-sans">
+      <div className="w-full max-w-md bg-white p-12 rounded-[2rem] shadow-xl border border-slate-200 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="text-center mb-10">
+          <div className="bg-blue-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-blue-100">
+            <Lock size={32} className="text-blue-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-slate-800 mb-2">Admin Portal</h2>
+          <p className="text-slate-500 text-[0.95rem]">Please authenticate to access the billing dashboard.</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="error-badge">
-              <AlertCircle size={16} /> {error}
+            <div className="bg-red-50 text-red-600 p-4 rounded-2xl flex items-center gap-3 text-sm font-semibold border border-red-100">
+              <AlertCircle size={18} /> {error}
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label">Login ID</label>
-            <div className="input-with-icon">
-              <User size={18} />
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-600 ml-1">Login ID</label>
+            <div className="relative group">
+              <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input 
                 type="text" 
                 placeholder="Enter login ID"
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-800"
                 value={loginId}
                 onChange={(e) => setLoginId(e.target.value)}
                 required 
@@ -58,13 +61,14 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div className="input-with-icon">
-              <Lock size={18} />
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-600 ml-1">Password</label>
+            <div className="relative group">
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input 
                 type="password" 
                 placeholder="Enter password"
+                className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-800"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required 
@@ -72,110 +76,19 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
-          <button type="submit" className="login-btn" disabled={loading}>
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-600/20 flex items-center justify-center gap-3 transition-all hover:-translate-y-0.5 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+          >
             {loading ? 'Authenticating...' : <><LogIn size={20} /> Sign In</>}
           </button>
         </form>
 
-        <div className="login-footer">
+        <div className="mt-12 text-center text-[0.8rem] text-slate-400 font-medium">
           <p>© 2026 WorkNovas LLC • Secure Billing System</p>
         </div>
       </div>
-
-      <style>{`
-        .login-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-          padding: 2rem;
-        }
-
-        .login-card {
-          width: 100%;
-          max-width: 440px;
-          padding: 3rem;
-          background: white;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-          border-radius: 20px;
-          border: 1px solid #e2e8f0;
-          animation: slideUpFade 0.6s ease-out;
-        }
-
-        @keyframes slideUpFade {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .brand {
-          text-align: center;
-          margin-bottom: 2.5rem;
-        }
-
-        .brand-logo {
-          background: #eff6ff;
-          width: 64px;
-          height: 64px;
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 1.5rem;
-          border: 1px solid #bfdbfe;
-        }
-
-        .brand h2 { font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--text-main); }
-        .brand p { color: var(--text-muted); font-size: 0.95rem; }
-
-        .error-badge {
-          background: rgba(239, 68, 68, 0.15);
-          color: #ef4444;
-          padding: 12px;
-          border-radius: 12px;
-          margin-bottom: 1.5rem;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .login-btn {
-          width: 100%;
-          height: 52px;
-          background: var(--primary);
-          color: white;
-          font-weight: 700;
-          font-size: 1rem;
-          margin-top: 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          border-radius: 12px;
-        }
-
-        .login-btn:hover {
-          background: var(--primary-hover);
-          box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
-        }
-
-        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .login-footer {
-          margin-top: 2.5rem;
-          text-align: center;
-          color: var(--text-muted);
-          font-size: 0.85rem;
-        }
-
-        /* Input overrides for login */
-        .input-with-icon { position: relative; }
-        .input-with-icon svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-        .input-with-icon input { padding-left: 44px; width: 100%; }
-      `}</style>
     </div>
   );
 };

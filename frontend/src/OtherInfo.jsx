@@ -49,155 +49,137 @@ const OtherInfo = ({ getHeaders }) => {
         setSettings({ ...settings, [name]: value });
     };
 
-    if (loading) return <div className="other-info-page"><p>Loading settings...</p></div>;
+    if (loading) return (
+        <div className="flex items-center justify-center py-20">
+            <div className="flex items-center gap-3 text-slate-400">
+                <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin"></div>
+                Initializing configuration...
+            </div>
+        </div>
+    );
 
     return (
-        <div className="other-info-page">
-            <div className="section-header">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-end">
                 <div>
-                    <h2>Invoice Configuration</h2>
-                    <p className="subtitle">Customize company details, billing addresses, and remittance info.</p>
+                   <h2 className="text-2xl font-bold text-slate-800">Invoice Configuration</h2>
+                   <p className="text-slate-500 text-sm mt-1">Customize company details, billing addresses, and remittance info.</p>
                 </div>
             </div>
 
-            <div className="glass-effect settings-container animate-in">
-                <form onSubmit={handleSave} className="settings-form">
-                    <div className="settings-grid">
-                        <div className="settings-section">
-                            <div className="section-title"><Building size={18} /> Company Branding</div>
-                            <div className="form-group">
-                                <label className="form-label">Company Name</label>
-                                <input 
-                                    name="company_name" 
-                                    value={settings.company_name} 
-                                    onChange={handleChange} 
-                                    placeholder="WorkNovas LLC"
-                                />
+            <div className="bg-white border border-slate-200 rounded-3xl p-8 md:p-12 shadow-sm">
+                <form onSubmit={handleSave} className="space-y-12">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div className="space-y-8">
+                            <div className="flex items-center gap-3 text-blue-600 font-bold border-b border-slate-100 pb-4">
+                                <Building size={20} />
+                                <span>Company Branding</span>
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Company Address</label>
-                                <textarea 
-                                    name="company_address" 
-                                    value={settings.company_address} 
-                                    onChange={handleChange} 
-                                    rows="3"
-                                    placeholder="1117 Whitmore St, #A..."
-                                />
-                            </div>
-                        </div>
-
-                        <div className="settings-section">
-                            <div className="section-title"><MapPin size={18} /> Billing Info</div>
-                            <div className="form-group">
-                                <label className="form-label">Bill To (Default)</label>
-                                <textarea 
-                                    name="bill_to" 
-                                    value={settings.bill_to} 
-                                    onChange={handleChange} 
-                                    rows="4"
-                                    placeholder="Accounts Payable- Infogain Corporation..."
-                                />
-                                <p className="input-tip">This will appear on the top right of the invoice.</p>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Payment Terms</label>
-                                <input 
-                                    name="terms" 
-                                    value={settings.terms} 
-                                    onChange={handleChange} 
-                                    placeholder="Net-30"
-                                />
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
+                                    <input 
+                                        name="company_name" 
+                                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-700 font-medium"
+                                        value={settings.company_name} 
+                                        onChange={handleChange} 
+                                        placeholder="WorkNovas LLC"
+                                    />
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Company Address</label>
+                                    <textarea 
+                                        name="company_address" 
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-700 font-medium min-h-[120px]"
+                                        value={settings.company_address} 
+                                        onChange={handleChange} 
+                                        rows="3"
+                                        placeholder="1117 Whitmore St, #A..."
+                                    />
+                                </div>
                             </div>
                         </div>
 
-                        <div className="settings-section full-width">
-                            <div className="section-title"><CreditCard size={18} /> Remittance / Payment Info</div>
-                            <div className="form-group">
-                                <label className="form-label">Remit to Details (Red Text Area)</label>
+                        <div className="space-y-8">
+                            <div className="flex items-center gap-3 text-blue-600 font-bold border-b border-slate-100 pb-4">
+                                <MapPin size={20} />
+                                <span>Billing Info</span>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Bill To (Default)</label>
+                                    <textarea 
+                                        name="bill_to" 
+                                        className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-700 font-medium min-h-[150px]"
+                                        value={settings.bill_to} 
+                                        onChange={handleChange} 
+                                        rows="4"
+                                        placeholder="Accounts Payable- Infogain Corporation..."
+                                    />
+                                    <p className="text-[0.7rem] text-slate-400 font-medium px-1 italic">This address will appear in the "Bill To" section of generated PDFs.</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Payment Terms</label>
+                                    <input 
+                                        name="terms" 
+                                        className="w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-600 focus:bg-white transition-all text-slate-700 font-medium"
+                                        value={settings.terms} 
+                                        onChange={handleChange} 
+                                        placeholder="Net-30"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-2 space-y-8 mt-4 pt-4 border-t border-slate-100">
+                            <div className="flex items-center gap-3 text-red-500 font-bold">
+                                <CreditCard size={20} />
+                                <span>Remittance / Payment Details</span>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Remit to Details (PDF Focus Area)</label>
                                 <textarea 
                                     name="remit_to" 
+                                    className="w-full px-5 py-4 bg-red-50/10 border border-red-100 rounded-3xl outline-none focus:border-red-500 focus:bg-white transition-all text-slate-700 font-medium min-h-[160px]"
                                     value={settings.remit_to} 
                                     onChange={handleChange} 
                                     rows="5"
-                                    placeholder="For ACH Payment Account Name: WorkNovas, LLC..."
+                                    placeholder="Provide bank details, routing numbers, and contact info..."
                                 />
-                                <p className="input-tip">Provide bank details, routing numbers, and contact info.</p>
+                                <div className="flex items-center gap-2 text-slate-400 text-[0.7rem] font-medium italic mt-2 ml-1">
+                                    <Info size={14} className="text-red-300" />
+                                    This critical info is highlighted in red on your invoices for visibility.
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="form-footer">
-                        <button type="submit" className="btn-primary" disabled={saving}>
-                            {saving ? 'Saving...' : <><Save size={20} /> Save Changes</>}
+                    <div className="flex justify-end pt-8 border-t border-slate-100">
+                        <button 
+                            type="submit" 
+                            disabled={saving}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-2xl font-bold transition-all shadow-xl shadow-blue-600/20 active:scale-95 disabled:opacity-50 flex items-center gap-3 disabled:cursor-not-allowed"
+                        >
+                            {saving ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    Updating...
+                                </>
+                            ) : (
+                                <>
+                                    <Save size={20} />
+                                    Save Configuration
+                                </>
+                            )}
                         </button>
                     </div>
                 </form>
             </div>
-
-            <style>{`
-                .settings-container {
-                    padding: 2.5rem;
-                }
-                
-                .settings-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 3rem;
-                }
-
-                .settings-section.full-width {
-                    grid-column: span 2;
-                }
-
-                .section-title {
-                    font-size: 1.1rem;
-                    font-weight: 700;
-                    margin-bottom: 1.5rem;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    color: var(--primary);
-                }
-
-                .form-group {
-                    margin-bottom: 1.5rem;
-                }
-
-                textarea {
-                    width: 100%;
-                    background: white;
-                    border: 1px solid var(--glass-border);
-                    border-radius: 12px;
-                    padding: 12px;
-                    color: var(--text-main);
-                    font-family: inherit;
-                    line-height: 1.5;
-                }
-
-                textarea:focus {
-                    outline: none;
-                    border-color: var(--primary);
-                }
-
-                .input-tip {
-                    font-size: 0.75rem;
-                    color: var(--text-muted);
-                    margin-top: 6px;
-                }
-
-                .form-footer {
-                    margin-top: 2rem;
-                    padding-top: 2rem;
-                    border-top: 1px solid var(--glass-border);
-                    display: flex;
-                    justify-content: flex-end;
-                }
-
-                @media (max-width: 900px) {
-                    .settings-grid { grid-template-columns: 1fr; }
-                    .settings-section.full-width { grid-column: span 1; }
-                }
-            `}</style>
         </div>
     );
 };

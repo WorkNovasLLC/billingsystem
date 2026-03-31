@@ -29,6 +29,9 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [invoices, setInvoices] = useState([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -36,7 +39,7 @@ function App() {
 
   useEffect(() => {
     if (isLoggedIn) {
-      fetchEmployees();
+      refreshAll();
     }
   }, [isLoggedIn]);
 
@@ -47,7 +50,7 @@ function App() {
     } catch (err) {
       setIsLoggedIn(false);
     } finally {
-      setCheckingAuth(false);
+      setTimeout(() => setCheckingAuth(false), 800);
     }
   };
 
@@ -56,36 +59,53 @@ function App() {
   };
 
   const handleLogout = async () => {
+    setIsProcessingAuth(true);
     try {
       await axios.post(`${API_BASE}/logout`);
-      setIsLoggedIn(false);
+      setTimeout(() => {
+        setIsLoggedIn(false);
+        setIsProcessingAuth(false);
+      }, 1000);
     } catch (err) {
       console.error('Logout failed:', err);
       setIsLoggedIn(false);
+      setIsProcessingAuth(false);
     }
   };
 
-  const getHeaders = () => ({
-    // Headers no longer needed for session auth (handled by cookies)
-  });
+  const getHeaders = () => ({});
 
   const fetchEmployees = async () => {
     setLoadingEmployees(true);
     try {
-      const response = await axios.get(`${API_BASE}/employees`, getHeaders());
+      const response = await axios.get(`${API_BASE}/employees`);
       setEmployees(response.data);
     } catch (err) {
       console.error('Error fetching employees:', err);
-      if (err.response?.status === 403 || err.response?.status === 401) {
-        handleLogout();
-      }
     } finally {
       setLoadingEmployees(false);
     }
   };
 
-  if (checkingAuth) {
-    return <div className="loading-screen">Verifying Session...</div>;
+  const fetchInvoices = async () => {
+    setLoadingInvoices(true);
+    try {
+      const response = await axios.get(`${API_BASE}/invoices`);
+      setInvoices(response.data);
+    } catch (err) {
+      console.error('Error fetching invoices:', err);
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
+  const refreshAll = () => {
+    fetchEmployees();
+    fetchInvoices();
+  };
+
+  if (checkingAuth || isProcessingAuth) {
+    return <FullPageLoader message={isProcessingAuth ? "Signing out safely..." : "Verifying your session..."} />;
   }
 
   // If not logged in, show login page exclusively
@@ -96,351 +116,153 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'employees':
-        return <EmployeeManagement employees={employees} onRefresh={fetchEmployees} getHeaders={getHeaders} loading={loadingEmployees} />;
+        return <EmployeeManagement employees={employees} onRefresh={refreshAll} getHeaders={getHeaders} loading={loadingEmployees} />;
       case 'bill':
-        return <BillGeneration employees={employees} onRefresh={fetchEmployees} getHeaders={getHeaders} />;
+        return <BillGeneration employees={employees} onRefresh={refreshAll} getHeaders={getHeaders} />;
       case 'history':
         return <InvoiceHistory getHeaders={getHeaders} />;
       case 'settings':
         return <OtherInfo getHeaders={getHeaders} />;
       default:
-        return <DashboardStats employees={employees} setActiveTab={setActiveTab} loading={loadingEmployees} />;
+        return <DashboardStats employees={employees} invoices={invoices} setActiveTab={setActiveTab} loadingEmployees={loadingEmployees} loadingInvoices={loadingInvoices} />;
     }
   };
 
   return (
-    <div className="app-layout">
+    <div className="grid grid-cols-[280px_1fr] h-screen overflow-hidden bg-slate-50 font-sans">
       <Toaster position="top-right" reverseOrder={false} />
+      
       {/* Sidebar */}
-      <aside className="sidebar glass-effect">
-        <div className="logo">
-          <div className="logo-icon"><Briefcase size={24} color="#6366f1" /></div>
-          <span>WorkNovas</span>
+      <aside className="m-4 p-6 flex flex-col h-[calc(100vh-2rem)] relative bg-white border border-slate-200 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-3 mb-10 text-xl font-extrabold text-blue-600">
+          <div className="bg-white p-1 rounded-lg flex items-center justify-center border border-slate-100 shadow-sm w-12 h-12 overflow-hidden">
+            <img src="/logo.svg" alt="WorkNovas LLC" className="w-full h-full object-contain" />
+          </div>
+          <span className="tracking-tight">WorkNovas<span className="text-slate-400">LLC</span></span>
         </div>
         
-        <nav className="side-nav">
-          <button 
-            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setActiveTab('dashboard')}
-          >
-            <TrendingUp size={20} /> Dashboard
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'employees' ? 'active' : ''}`}
-            onClick={() => setActiveTab('employees')}
-          >
-            <Users size={20} /> Employees
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'bill' ? 'active' : ''}`}
-            onClick={() => setActiveTab('bill')}
-          >
-            <PlusCircle size={20} /> Generate Bill
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => setActiveTab('history')}
-          >
-            <History size={20} /> Invoice History
-          </button>
-          <button 
-            className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <Settings size={20} /> Other Info
-          </button>
+        <nav className="flex flex-col gap-2 flex-1">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: <TrendingUp size={20} /> },
+            { id: 'employees', label: 'Employees', icon: <Users size={20} /> },
+            { id: 'bill', label: 'Generate Bill', icon: <PlusCircle size={20} /> },
+            { id: 'history', label: 'Invoice History', icon: <History size={20} /> },
+            { id: 'settings', label: 'Other Info', icon: <Settings size={20} /> },
+          ].map((item) => (
+            <button 
+              key={item.id}
+              className={`flex items-center gap-3 px-4 py-3.5 transition-all text-[0.95rem] font-medium rounded-xl text-left
+                ${activeTab === item.id 
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                  : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1'
+                }`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              {item.icon} {item.label}
+            </button>
+          ))}
         </nav>
 
-        <div className="sidebar-footer glass-effect">
-            <div className="user-profile">
-                <div className="avatar">AS</div>
-                <div className="user-text">
-                    <p className="user-name">Admin User</p>
-                    <button className="logout-btn" onClick={handleLogout}><LogOut size={12} /> Logout</button>
-                </div>
-            </div>
+        <div className="mt-auto p-3 border border-slate-200 rounded-xl flex items-center gap-3 bg-white">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-xs ring-2 ring-blue-50">
+            AS
+          </div>
+          <div className="flex-1">
+            <p className="text-[0.9rem] font-semibold text-slate-800">Admin User</p>
+            <button 
+              className="text-[0.75rem] text-slate-500 hover:text-blue-600 flex items-center gap-1 mt-0.5 font-medium transition-colors"
+              onClick={handleLogout}
+            >
+              <LogOut size={12} /> Logout
+            </button>
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="main-content">
-        <header className="top-header glass-effect">
-          <h1 className="page-title">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
-          <div className="header-actions">
-            <button className="btn-secondary" onClick={() => setActiveTab('bill')}>Quick Bill</button>
+      <main className="p-4 h-full flex flex-col overflow-hidden">
+        <header className="px-8 py-5 flex justify-between items-center mb-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <h1 className="text-2xl font-bold text-slate-800 capitalize">{activeTab}</h1>
+          <div className="flex gap-2">
+            <button 
+              className="bg-white border border-slate-200 text-slate-800 px-4 py-2 font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
+              onClick={() => setActiveTab('bill')}
+            >
+              Quick Bill
+            </button>
           </div>
         </header>
 
-        <div className="content-scrollable">
-          <div className="container page-transition">
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="max-w-[1240px] mx-auto p-8 page-transition">
             {renderContent()}
           </div>
         </div>
       </main>
-
-      <style>{`
-        .app-layout {
-          display: grid;
-          grid-template-columns: 280px 1fr;
-          height: 100vh;
-          overflow: hidden;
-        }
-
-        .sidebar {
-          margin: 1rem;
-          padding: 1.5rem;
-          display: flex;
-          flex-direction: column;
-          height: calc(100vh - 2rem);
-          position: relative;
-        }
-
-        .logo {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 1.5rem;
-          font-weight: 800;
-          margin-bottom: 3rem;
-          background: linear-gradient(to right, #2563eb, #3b82f6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-        }
-
-        .logo-icon {
-          background: white;
-          padding: 10px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid var(--glass-border);
-          -webkit-text-fill-color: initial;
-        }
-
-        .side-nav {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          flex: 1;
-        }
-
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 14px 16px;
-          background: transparent;
-          color: var(--text-muted);
-          width: 100%;
-          text-align: left;
-          font-size: 0.95rem;
-          font-weight: 500;
-          border-radius: 12px;
-        }
-
-        .nav-item:hover {
-          background: rgba(37, 99, 235, 0.05);
-          color: var(--primary);
-          transform: translateX(5px);
-        }
-
-        .nav-item.active {
-          background: var(--primary);
-          color: white;
-          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        .sidebar-footer {
-          margin-top: auto;
-          padding: 12px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-        }
-
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #6366f1, #3b82f6);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.8rem;
-        }
-
-        .user-name { font-size: 0.9rem; font-weight: 600; }
-        .logout-btn { 
-            background: transparent; 
-            color: var(--text-muted); 
-            font-size: 0.75rem; 
-            display: flex; 
-            align-items: center; 
-            gap: 4px;
-            padding: 0;
-            margin-top: 2px;
-        }
-        .logout-btn:hover { color: #818cf8; }
-
-        .main-content {
-          padding: 1rem;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-        }
-
-        .top-header {
-          padding: 1.25rem 2rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-          border-radius: 16px;
-        }
-
-        .page-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: var(--text-main);
-        }
-
-        .content-scrollable {
-          flex: 1;
-          overflow-y: auto;
-          padding-right: 8px;
-        }
-
-        .content-scrollable::-webkit-scrollbar { width: 6px; }
-        .content-scrollable::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
-
-        .btn-secondary {
-            background: white;
-            border: 1px solid var(--glass-border);
-            color: var(--text-main);
-            padding: 8px 16px;
-            font-weight: 500;
-        }
-
-        .btn-secondary:hover {
-            background: var(--glass-border);
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
 
-const DashboardStats = ({ employees, setActiveTab, loading }) => {
+const DashboardStats = ({ employees, invoices, setActiveTab, loadingEmployees, loadingInvoices }) => {
   return (
-    <div className="dashboard-grid">
-      <div className="stat-card glass-effect animate-up">
-        <div className="stat-header">
-          <div className="stat-icon-bg purple"><Users size={24} /></div>
-          <span className="stat-label">Total Employees</span>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center">
+            <Users size={24} />
+          </div>
+          <span className="text-slate-500 font-medium text-[0.9rem]">Total Employees</span>
         </div>
-        <div className="stat-value">
-          {loading ? <div className="skeleton" style={{ width: '60px', height: '48px' }}></div> : employees.length}
+        <div className="text-4xl font-bold text-slate-800 mb-2">
+          {loadingEmployees ? <div className="skeleton w-16 h-12"></div> : employees.length}
         </div>
-        <div className="stat-footer">
-          {loading ? <div className="skeleton" style={{ width: '120px', height: '16px', marginTop: '4px' }}></div> : 'Registered workforce'}
-        </div>
-      </div>
-
-      <div className="stat-card glass-effect animate-up" style={{ animationDelay: '0.1s' }}>
-        <div className="stat-header">
-          <div className="stat-icon-bg blue"><FileText size={24} /></div>
-          <span className="stat-label">Invoices Generated</span>
-        </div>
-        <div className="stat-value">
-           {loading ? <div className="skeleton" style={{ width: '60px', height: '48px' }}></div> : '--'}
-        </div>
-        <div className="stat-footer">
-          {loading ? <div className="skeleton" style={{ width: '120px', height: '16px', marginTop: '4px' }}></div> : 'Total historical bills'}
+        <div className="text-slate-400 text-[0.8rem]">
+          {loadingEmployees ? <div className="skeleton w-32 h-4 mt-1"></div> : 'Registered workforce'}
         </div>
       </div>
 
-      <div className="action-card glass-effect animate-up" onClick={() => setActiveTab('bill')} style={{ animationDelay: '0.2s' }}>
-        <div className="action-content">
-          <h3>Create New Bill</h3>
-          <p>Generate employee invoices in seconds.</p>
+      <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300 delay-[0.1s]">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center">
+            <FileText size={24} />
+          </div>
+          <span className="text-slate-500 font-medium text-[0.9rem]">Invoices Generated</span>
         </div>
-        <ChevronRight size={32} />
+        <div className="text-4xl font-bold text-slate-800 mb-2">
+           {loadingInvoices ? <div className="skeleton w-16 h-12"></div> : invoices.length}
+        </div>
+        <div className="text-slate-400 text-[0.8rem]">
+          {loadingInvoices ? <div className="skeleton w-32 h-4 mt-1"></div> : 'Total historical bills'}
+        </div>
       </div>
 
-      <style>{`
-        .dashboard-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 1.5rem;
-        }
+      <div 
+        className="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-2xl p-8 shadow-xl shadow-blue-500/20 flex items-center justify-between cursor-pointer group hover:scale-[1.02] transition-all duration-300 delay-[0.2s]"
+        onClick={() => setActiveTab('bill')}
+      >
+        <div className="flex flex-col gap-2">
+          <h3 className="text-xl font-bold">Create New Bill</h3>
+          <p className="text-blue-100 text-[0.9rem]">Generate employee invoices in seconds.</p>
+        </div>
+        <ChevronRight size={32} className="group-hover:translate-x-2 transition-transform" />
+      </div>
+    </div>
+  );
+};
 
-        .stat-card {
-          padding: 2rem;
-          transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover { transform: translateY(-5px); }
-
-        .stat-header {
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 1.5rem;
-        }
-
-        .stat-icon-bg {
-          width: 48px;
-          height: 48px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .stat-icon-bg.purple { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
-        .stat-icon-bg.blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-
-        .stat-label { color: var(--text-muted); font-weight: 500; font-size: 0.9rem; }
-        .stat-value { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-        .stat-footer { color: var(--text-muted); font-size: 0.8rem; }
-
-        .action-card {
-          grid-column: span 1;
-          background: linear-gradient(135deg, #eff6ff, #dbeafe);
-          border: 1px solid #bfdbfe;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 2rem;
-          cursor: pointer;
-          color: var(--text-main);
-        }
-
-        .action-card h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
-        .action-card p { color: var(--text-muted); font-size: 0.9rem; }
-
-        .animate-up {
-          animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
-        }
-
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+const FullPageLoader = ({ message }) => {
+  return (
+    <div className="fixed inset-0 bg-slate-50 flex flex-col items-center justify-center z-[9999] animate-in fade-in duration-500">
+      <div className="relative mb-8">
+        <div className="w-24 h-24 bg-white rounded-3xl p-4 shadow-xl border border-slate-100 flex items-center justify-center animate-pulse">
+          <img src="/logo.svg" alt="WorkNovas LLC" className="w-full h-full object-contain" />
+        </div>
+        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shadow-lg animate-spin duration-[2000ms]">
+          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></div>
+        </div>
+      </div>
+      <h2 className="text-xl font-bold text-slate-800 mb-2">{message}</h2>
+      <p className="text-slate-400 text-sm font-medium">WorkNovas LLC • Secure Billing System</p>
     </div>
   );
 };

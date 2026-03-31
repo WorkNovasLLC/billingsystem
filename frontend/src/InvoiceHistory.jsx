@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Download, 
-  Eye, 
   Calendar, 
   Hash, 
   ExternalLink,
   History,
-  Trash2
+  Trash2,
+  FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { API_BASE } from './App';
@@ -63,51 +63,73 @@ const InvoiceHistory = ({ getHeaders }) => {
     }
   };
 
-  if (loading) return <div className="history-page"><p>Loading history...</p></div>;
-
   return (
-    <div className="history-page">
-      <div className="section-header">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex justify-between items-end">
         <div>
-          <h2>Invoice History</h2>
-          <p className="subtitle">Access and download all previously generated bills.</p>
+          <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <History className="text-blue-600" />
+            Invoice History
+          </h2>
+          <p className="text-slate-500 text-sm mt-1">Access and download all previously generated bills.</p>
         </div>
       </div>
 
-      <div className="glass-effect history-container">
-        <table className="modern-table">
+      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <table className="w-full border-collapse">
           <thead>
-            <tr>
-              <th><Hash size={14} /> ID</th>
-              <th><Calendar size={14} /> Created Date</th>
-              <th><ExternalLink size={14} /> Actions</th>
+            <tr className="bg-slate-50/50 border-b border-slate-100">
+              <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <div className="flex items-center gap-2"><Hash size={14} /> Invoice ID</div>
+              </th>
+              <th className="px-8 py-5 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <div className="flex items-center gap-2"><Calendar size={14} /> Created Date</div>
+              </th>
+              <th className="px-8 py-5 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
               [1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
-                  <td><div className="skeleton" style={{ width: '150px', height: '20px' }}></div></td>
-                  <td><div className="skeleton" style={{ width: '100px', height: '20px' }}></div></td>
-                  <td><div className="skeleton" style={{ width: '120px', height: '20px' }}></div></td>
+                  <td className="px-8 py-6"><div className="skeleton w-40 h-6"></div></td>
+                  <td className="px-8 py-6"><div className="skeleton w-32 h-6"></div></td>
+                  <td className="px-8 py-6"><div className="skeleton w-32 h-8 ml-auto"></div></td>
                 </tr>
               ))
             ) : invoices.length > 0 ? (
               invoices.map((inv) => (
-                <tr key={inv.invoice_number}>
-                  <td><span className="inv-id">{inv.invoice_number}</span></td>
-                  <td className="inv-date">{new Date(inv.created_at).toLocaleDateString()}</td>
-                  <td>
-                    <div className="history-actions">
+                <tr key={inv.invoice_number} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                            <FileText size={18} />
+                        </div>
+                        <span className="text-sm font-mono font-bold text-slate-700 tracking-tight">{inv.invoice_number}</span>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6 text-sm font-semibold text-slate-500">
+                    {new Date(inv.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                    })}
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex justify-end gap-3">
                       <button 
-                        className="btn-action glass-effect" 
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm active:scale-95 group/btn" 
                         onClick={() => downloadBlob(inv.invoice_number)}
                       >
-                        <Download size={16} /> Download PDF
+                        <Download size={14} className="group-hover/btn:translate-y-0.5 transition-transform" /> 
+                        Download PDF
                       </button>
                       <button 
-                        className="btn-icon delete" 
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 hover:border-red-100 rounded-xl transition-all active:scale-95 shadow-sm" 
                         onClick={() => handleDelete(inv.invoice_number)}
+                        title="Delete record"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -118,9 +140,12 @@ const InvoiceHistory = ({ getHeaders }) => {
             ) : (
                 <tr>
                     <td colSpan="3">
-                        <div className="empty-history-state">
-                            <History size={64} color="#94a3b8" strokeWidth={1} />
-                            <p>No invoices generated yet.</p>
+                        <div className="flex flex-col items-center justify-center py-24 text-center">
+                            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                                <History size={40} className="text-slate-200" strokeWidth={1} />
+                            </div>
+                            <h4 className="text-slate-800 font-bold mb-2">No History Found</h4>
+                            <p className="text-slate-400 text-sm font-medium italic">You haven't generated any invoices yet.</p>
                         </div>
                     </td>
                 </tr>
@@ -128,67 +153,6 @@ const InvoiceHistory = ({ getHeaders }) => {
           </tbody>
         </table>
       </div>
-
-      <style>{`
-        .history-container {
-          padding: 1rem;
-        }
-
-        .inv-id { font-weight: 700; color: #818cf8; font-family: monospace; }
-        .inv-date { color: var(--text-muted); font-size: 0.95rem; }
-
-        .btn-action {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          background: var(--primary);
-          color: white;
-          font-weight: 600;
-          font-size: 0.85rem;
-          border-radius: 10px;
-        }
-
-        .btn-action:hover {
-          background: var(--primary-hover);
-          color: white;
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-        }
-
-        .btn-action.glass-effect { border: 1px solid var(--glass-border); }
-        .history-actions { display: flex; gap: 12px; align-items: center; }
-
-        .btn-icon {
-          background: transparent;
-          border: 1px solid transparent;
-          padding: 8px;
-          border-radius: 10px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: var(--text-muted);
-        }
-
-        .btn-icon.delete:hover { 
-          background: rgba(239, 68, 68, 0.1); 
-          color: #ef4444; 
-          border-color: #ef4444; 
-        }
-
-        .empty-history-state {
-          padding: 5rem;
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 1.5rem;
-          color: var(--text-muted);
-        }
-
-        .empty-history-state p { font-size: 1.1rem; }
-      `}</style>
     </div>
   );
 };

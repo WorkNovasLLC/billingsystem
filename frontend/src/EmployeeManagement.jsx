@@ -70,14 +70,17 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
   };
 
   return (
-    <div className="employee-page">
-      <div className="section-header">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex justify-between items-end">
         <div>
-          <h2>Employee Directory</h2>
-          <p className="subtitle">Manage your workforce and hourly rates.</p>
+          <h2 className="text-2xl font-bold text-slate-800">Employee Directory</h2>
+          <p className="text-slate-500 text-sm mt-1">Manage your workforce and hourly rates.</p>
         </div>
         <button 
-          className="btn-primary"
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all shadow-sm
+            ${isAdding 
+              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' 
+              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 shadow-lg'}`}
           onClick={() => setIsAdding(!isAdding)}
         >
           {isAdding ? 'Cancel' : <><UserPlus size={18} /> Add Employee</>}
@@ -85,31 +88,33 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
       </div>
 
       {isAdding && (
-        <div className="glass-effect add-form animate-in">
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm animate-in zoom-in-95 duration-300">
           <form onSubmit={handleAddEmployee}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Full Name</label>
-                <div className="input-with-icon">
-                  <UserCheck size={18} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-600 ml-1">Full Name</label>
+                <div className="relative">
+                  <UserCheck size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="text" 
                     placeholder="e.g. John Doe"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:bg-white transition-all"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required 
                   />
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Hourly Pay ($)</label>
-                <div className="input-with-icon">
-                  <DollarSign size={18} />
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-600 ml-1">Hourly Pay ($)</label>
+                <div className="relative">
+                  <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="number" 
                     min="0"
                     step="0.01" 
                     placeholder="e.g. 50.00" 
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-600 focus:bg-white transition-all"
                     value={hourlyPay}
                     onChange={(e) => setHourlyPay(e.target.value)}
                     required 
@@ -117,188 +122,96 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders, loading }) => {
                 </div>
               </div>
             </div>
-            <button type="submit" className="btn-save">Save Employee</button>
+            <div className="mt-8 flex justify-end">
+              <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95">
+                Save Employee
+              </button>
+            </div>
           </form>
         </div>
       )}
 
-      <div className="glass-effect table-container">
-        <table className="modern-table">
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <table className="w-full border-collapse">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Hourly Rate</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
+            <tr className="bg-slate-50/50 border-bottom border-slate-100">
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">ID</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">Hourly Rate</th>
+              <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
               [1, 2, 3, 4, 5].map((i) => (
                 <tr key={i}>
-                  <td><div className="skeleton" style={{ width: '50px', height: '20px' }}></div></td>
-                  <td><div className="skeleton" style={{ width: '150px', height: '20px' }}></div></td>
-                  <td><div className="skeleton" style={{ width: '100px', height: '20px' }}></div></td>
-                  <td><div className="skeleton" style={{ width: '80px', height: '20px', marginLeft: 'auto' }}></div></td>
+                  <td className="px-6 py-4"><div className="skeleton w-12 h-5"></div></td>
+                  <td className="px-6 py-4"><div className="skeleton w-40 h-5"></div></td>
+                  <td className="px-6 py-4"><div className="skeleton w-24 h-5"></div></td>
+                  <td className="px-6 py-4 text-right"><div className="skeleton w-20 h-5 ml-auto"></div></td>
                 </tr>
               ))
             ) : employees.length > 0 ? employees.map((emp) => (
-              <tr key={emp.id} className={editingId === emp.id ? 'editing-row' : ''}>
-                <td className="emp-id">#{String(emp.id).padStart(4, '0')}</td>
-                <td className="emp-name">
+              <tr key={emp.id} className={`transition-colors ${editingId === emp.id ? 'bg-blue-50/30' : 'hover:bg-slate-50/50'}`}>
+                <td className="px-6 py-4">
+                  <span className="text-sm font-mono font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md ring-1 ring-blue-100">
+                    #{String(emp.id).padStart(4, '0')}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
                   {editingId === emp.id ? (
                     <input 
                       type="text" 
-                      className="edit-input" 
+                      className="w-full px-3 py-2 border border-blue-200 rounded-lg outline-none focus:ring-2 ring-blue-100 transition-all text-sm font-medium" 
                       value={editName} 
                       onChange={(e) => setEditName(e.target.value)}
+                      autoFocus
                     />
-                  ) : emp.name}
+                  ) : (
+                    <span className="text-sm font-semibold text-slate-700">{emp.name}</span>
+                  )}
                 </td>
-                <td className="emp-rate">
+                <td className="px-6 py-4">
                   {editingId === emp.id ? (
-                    <div className="edit-pay-container">
-                      <span>$</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-400 font-bold">$</span>
                       <input 
                         type="number" 
                         min="0"
                         step="0.01"
-                        className="edit-input mini" 
+                        className="w-24 px-3 py-2 border border-blue-200 rounded-lg outline-none focus:ring-2 ring-blue-100 transition-all text-sm font-medium" 
                         value={editPay} 
                         onChange={(e) => setEditPay(e.target.value)}
                       />
                     </div>
-                  ) : `$${parseFloat(emp.hourly_pay).toFixed(2)} / hr`}
+                  ) : (
+                    <span className="text-sm text-slate-500 font-medium">
+                      <span className="text-slate-400">$</span>{parseFloat(emp.hourly_pay).toFixed(2)} <span className="text-xs text-slate-400">/ hr</span>
+                    </span>
+                  )}
                 </td>
-                <td style={{ textAlign: 'right' }}>
+                <td className="px-6 py-4 text-right">
                   {editingId === emp.id ? (
-                    <div className="edit-actions">
-                      <button className="btn-icon save" onClick={() => handleUpdate(emp.id)}><Check size={16} /></button>
-                      <button className="btn-icon cancel" onClick={cancelEdit}><X size={16} /></button>
+                    <div className="flex justify-end gap-2">
+                      <button className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-emerald-100" onClick={() => handleUpdate(emp.id)}><Check size={16} /></button>
+                      <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200" onClick={cancelEdit}><X size={16} /></button>
                     </div>
                   ) : (
-                    <div className="row-actions">
-                      <button className="btn-icon edit" onClick={() => startEdit(emp)}><Edit2 size={16} /></button>
-                      <button className="btn-icon delete" onClick={() => handleDelete(emp.id, emp.name)}><Trash2 size={16} /></button>
+                    <div className="flex justify-end gap-2">
+                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-50" onClick={() => startEdit(emp)}><Edit2 size={16} /></button>
+                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-red-50" onClick={() => handleDelete(emp.id, emp.name)}><Trash2 size={16} /></button>
                     </div>
                   )}
                 </td>
               </tr>
             )) : (
               <tr>
-                <td colSpan="4" className="empty-state">No employees found.</td>
+                <td colSpan="4" className="px-6 py-20 text-center text-slate-400 text-sm font-medium italic">No employees found in the directory.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-
-      <style>{`
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-        }
-
-        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
-
-        .add-form {
-          padding: 2rem;
-          margin-bottom: 2rem;
-        }
-
-        .form-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 1.5rem;
-        }
-
-        .input-with-icon {
-          position: relative;
-        }
-
-        .input-with-icon svg {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: var(--text-muted);
-        }
-
-        .input-with-icon input {
-          padding-left: 40px;
-        }
-
-        .btn-save {
-          background: var(--primary);
-          color: white;
-          padding: 12px 24px;
-          font-weight: 600;
-          margin-top: 1rem;
-        }
-
-        .table-container {
-          padding: 1rem;
-        }
-
-        .emp-id { font-family: monospace; color: var(--primary); font-weight: 600; }
-        .emp-name { font-weight: 600; }
-        .emp-rate { color: var(--text-muted); }
-
-        .editing-row { background: #eff6ff; }
-
-        .edit-input {
-          background: white;
-          border: 1px solid var(--glass-border);
-          border-radius: 6px;
-          padding: 6px 10px;
-          color: var(--text-main);
-          width: 100%;
-        }
-
-        .edit-input.mini { width: 80px; margin-left: 4px; }
-        .edit-pay-container { display: flex; align-items: center; }
-
-        /* Hide number input spinners */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        input[type="number"] {
-          -moz-appearance: textfield;
-        }
-
-        .btn-icon {
-          background: transparent;
-          border: 1px solid transparent;
-          padding: 6px;
-          border-radius: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .btn-icon.edit:hover { background: rgba(99, 102, 241, 0.1); color: var(--primary); border-color: var(--primary); }
-        .btn-icon.save:hover { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b981; }
-        .btn-icon.cancel:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
-
-        .btn-icon.delete:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
-
-        .edit-actions, .row-actions { display: flex; gap: 8px; justify-content: flex-end; }
-
-        .animate-in {
-          animation: slideDown 0.4s ease-out;
-        }
-
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };
