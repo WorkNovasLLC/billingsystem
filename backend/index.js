@@ -13,7 +13,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || 'worknovas_billing_secret_k
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Update with your frontend port if different
+  origin: '*', // Update with your frontend port if different
   credentials: true
 }));
 app.use((req, res, next) => {
@@ -106,17 +106,17 @@ const initializeDB = async () => {
     // Seed default settings
     const settingsCount = await pool.query('SELECT COUNT(*) FROM settings');
     if (parseInt(settingsCount.rows[0].count) === 0) {
-        const defaults = {
-            company_name: 'WorkNovas LLC',
-            company_address: '1117 Whitmore St, #A, Monterey Park, CA 91755',
-            bill_to: 'Accounts Payable- Infogain Corporation\n485, Alberto Way Los Gatos, CA 95032',
-            remit_to: 'For ACH Payment Account Name: WorkNovas, LLC\nBank Name: Choice Financial Group\nRouting: 091311229\nAccount Number: 202351879486\nRemittance advised to be sent: account@worknovasllc.com',
-            terms: 'Net-30'
-        };
-        for (const [key, value] of Object.entries(defaults)) {
-            await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2)', [key, value]);
-        }
-        console.log('Default settings seeded.');
+      const defaults = {
+        company_name: 'WorkNovas LLC',
+        company_address: '1117 Whitmore St, #A, Monterey Park, CA 91755',
+        bill_to: 'Accounts Payable- Infogain Corporation\n485, Alberto Way Los Gatos, CA 95032',
+        remit_to: 'For ACH Payment Account Name: WorkNovas, LLC\nBank Name: Choice Financial Group\nRouting: 091311229\nAccount Number: 202351879486\nRemittance advised to be sent: account@worknovasllc.com',
+        terms: 'Net-30'
+      };
+      for (const [key, value] of Object.entries(defaults)) {
+        await pool.query('INSERT INTO settings (key, value) VALUES ($1, $2)', [key, value]);
+      }
+      console.log('Default settings seeded.');
     }
 
     console.log('PostgreSQL Database connected and initialized.');
