@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { 
-  Users, 
-  FileText, 
-  History, 
-  PlusCircle, 
-  Download, 
+import {
+  Users,
+  FileText,
+  History,
+  PlusCircle,
+  Download,
   ChevronRight,
   TrendingUp,
   Briefcase,
@@ -21,7 +21,6 @@ import Login from './Login';
 
 const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5001/api').replace(/\/$/, '');
 axios.defaults.withCredentials = true;
-console.log('API_BASE is:', API_BASE);
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -137,7 +136,7 @@ function App() {
   return (
     <div className="grid grid-cols-[280px_1fr] h-screen overflow-hidden bg-slate-50 font-sans">
       <Toaster position="top-right" reverseOrder={false} />
-      
+
       {/* Sidebar */}
       <aside className="m-4 p-6 flex flex-col h-[calc(100vh-2rem)] relative bg-white border border-slate-200 rounded-2xl shadow-sm">
         <div className="flex items-center gap-3 mb-10 text-xl font-extrabold text-blue-600">
@@ -146,7 +145,7 @@ function App() {
           </div>
           <span className="tracking-tight">WorkNovas<span className="text-slate-400">LLC</span></span>
         </div>
-        
+
         <nav className="flex flex-col gap-2 flex-1">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: <TrendingUp size={20} /> },
@@ -155,11 +154,11 @@ function App() {
             { id: 'history', label: 'Invoice History', icon: <History size={20} /> },
             { id: 'settings', label: 'Other Info', icon: <Settings size={20} /> },
           ].map((item) => (
-            <button 
+            <button
               key={item.id}
               className={`flex items-center gap-3 px-4 py-3.5 transition-all text-[0.95rem] font-medium rounded-xl text-left
-                ${activeTab === item.id 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' 
+                ${activeTab === item.id
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                   : 'text-slate-500 hover:bg-blue-50 hover:text-blue-600 hover:translate-x-1'
                 }`}
               onClick={() => setActiveTab(item.id)}
@@ -175,7 +174,7 @@ function App() {
           </div>
           <div className="flex-1">
             <p className="text-[0.9rem] font-semibold text-slate-800">Admin User</p>
-            <button 
+            <button
               className="text-[0.75rem] text-slate-500 hover:text-blue-600 flex items-center gap-1 mt-0.5 font-medium transition-colors"
               onClick={handleLogout}
             >
@@ -190,7 +189,7 @@ function App() {
         <header className="px-8 py-5 flex justify-between items-center mb-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
           <h1 className="text-2xl font-bold text-slate-800 capitalize">{activeTab}</h1>
           <div className="flex gap-2">
-            <button 
+            <button
               className="bg-white border border-slate-200 text-slate-800 px-4 py-2 font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm"
               onClick={() => setActiveTab('bill')}
             >
@@ -235,14 +234,14 @@ const DashboardStats = ({ employees, invoices, setActiveTab, loadingEmployees, l
           <span className="text-slate-500 font-medium text-[0.9rem]">Invoices Generated</span>
         </div>
         <div className="text-4xl font-bold text-slate-800 mb-2">
-           {loadingInvoices ? <div className="skeleton w-16 h-12"></div> : invoices.length}
+          {loadingInvoices ? <div className="skeleton w-16 h-12"></div> : invoices.length}
         </div>
         <div className="text-slate-400 text-[0.8rem]">
           {loadingInvoices ? <div className="skeleton w-32 h-4 mt-1"></div> : 'Total historical bills'}
         </div>
       </div>
 
-      <div 
+      <div
         className="lg:col-span-1 bg-gradient-to-br from-blue-600 to-blue-500 text-white rounded-2xl p-8 shadow-xl shadow-blue-500/20 flex items-center justify-between cursor-pointer group hover:scale-[1.02] transition-all duration-300 delay-[0.2s]"
         onClick={() => setActiveTab('bill')}
       >
