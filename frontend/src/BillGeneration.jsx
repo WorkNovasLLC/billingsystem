@@ -12,10 +12,16 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { API_BASE } from './App';
 
+const getNewInvoiceId = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `INV-${pad(d.getSeconds())}${pad(d.getMinutes())}${pad(d.getHours())}${pad(d.getDate())}${pad(d.getMonth() + 1)}${d.getFullYear()}`;
+};
+
 const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
   const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [hoursData, setHoursData] = useState({}); // { empId: hours }
-  const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Date.now()}`);
+  const [invoiceNumber, setInvoiceNumber] = useState(getNewInvoiceId());
   const [loading, setLoading] = useState(false);
 
   const toggleEmployee = (emp) => {
@@ -106,7 +112,7 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
       // Reset
       setSelectedEmployees([]);
       setHoursData({});
-      setInvoiceNumber(`INV-${Date.now()}`);
+      setInvoiceNumber(getNewInvoiceId());
       onRefresh();
     } catch (err) {
       console.error("Failed to generate/save invoice:", err);
@@ -129,7 +135,7 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
                 type="text" 
                 className="invoice-input" 
                 value={invoiceNumber} 
-                onChange={e => setInvoiceNumber(e.target.value)}
+                readOnly
             />
         </div>
       </div>
