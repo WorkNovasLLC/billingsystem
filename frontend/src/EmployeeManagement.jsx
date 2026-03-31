@@ -62,6 +62,7 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders }) => {
                   <DollarSign size={18} />
                   <input 
                     type="number" 
+                    min="0"
                     step="0.01" 
                     placeholder="e.g. 50.00" 
                     value={hourlyPay}

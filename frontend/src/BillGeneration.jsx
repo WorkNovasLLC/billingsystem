@@ -32,7 +32,8 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
   };
 
   const handleHourChange = (empId, hours) => {
-    setHoursData({ ...hoursData, [empId]: parseFloat(hours) || 0 });
+    const val = Math.max(0, parseFloat(hours) || 0);
+    setHoursData({ ...hoursData, [empId]: val });
   };
 
   const calculateTotal = (emp) => {
@@ -169,6 +170,7 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
                     <div className="item-inputs">
                       <input 
                         type="number" 
+                        min="0"
                         placeholder="Hours"
                         className="hours-input"
                         value={hoursData[emp.id] || ''}
@@ -301,6 +303,16 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
           width: 100px;
           text-align: right;
           padding: 8px 12px;
+        }
+
+        /* Hide number input spinners */
+        .hours-input::-webkit-inner-spin-button,
+        .hours-input::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        .hours-input {
+          -moz-appearance: textfield;
         }
 
         .item-total { font-weight: 700; font-size: 1.1rem; min-width: 100px; text-align: right; }
