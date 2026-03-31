@@ -19,7 +19,7 @@ import InvoiceHistory from './InvoiceHistory';
 import OtherInfo from './OtherInfo';
 import Login from './Login';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:5001/api';
+const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:5001/api').replace(/\/$/, '');
 axios.defaults.withCredentials = true;
 console.log('API_BASE is:', API_BASE);
 
