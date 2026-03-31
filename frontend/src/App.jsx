@@ -82,6 +82,9 @@ function App() {
       setEmployees(response.data);
     } catch (err) {
       console.error('Error fetching employees:', err);
+      if (err.response?.status === 401) {
+        setIsLoggedIn(false);
+      }
     } finally {
       setLoadingEmployees(false);
     }
@@ -94,6 +97,9 @@ function App() {
       setInvoices(response.data);
     } catch (err) {
       console.error('Error fetching invoices:', err);
+      if (err.response?.status === 401) {
+        setIsLoggedIn(false);
+      }
     } finally {
       setLoadingInvoices(false);
     }

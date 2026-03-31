@@ -47,6 +47,7 @@ const pool = new Pool({
 });
 
 // Session Configuration
+app.set('trust proxy', 1);
 app.use(session({
   store: new pgSession({
     pool: pool,
@@ -57,8 +58,8 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
-    secure: process.env.NODE_ENV === 'production', // set to true if using https
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // necessary for some cross-origin cookies
+    secure: true, // Always true for Render HTTPS
+    sameSite: 'none', // Required for cross-origin cookies
     httpOnly: true
   }
 }));
