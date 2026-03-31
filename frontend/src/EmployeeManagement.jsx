@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Plus, UserPlus, DollarSign, UserCheck } from 'lucide-react';
+import { Plus, UserPlus, DollarSign, UserCheck, Edit2, Check, X } from 'lucide-react';
 import { API_BASE } from './App';
 
 const EmployeeManagement = ({ employees, onRefresh, getHeaders }) => {
   const [name, setName] = useState('');
   const [hourlyPay, setHourlyPay] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editPay, setEditPay] = useState('');
 
   const handleAddEmployee = async (e) => {
     e.preventDefault();
@@ -21,6 +24,32 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders }) => {
       onRefresh();
     } catch (err) {
       console.error('Error adding employee:', err);
+    }
+  };
+
+  const startEdit = (emp) => {
+    setEditingId(emp.id);
+    setEditName(emp.name);
+    setEditPay(emp.hourly_pay);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditPay('');
+  };
+
+  const handleUpdate = async (id) => {
+    try {
+      await axios.put(`${API_BASE}/employees/${id}`, {
+        name: editName,
+        hourly_pay: Math.max(0, parseFloat(editPay) || 0)
+      }, getHeaders());
+      setEditingId(null);
+      onRefresh();
+    } catch (err) {
+      console.error('Error updating employee:', err);
+      alert('Failed to update employee');
     }
   };
 
@@ -84,16 +113,48 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders }) => {
               <th>ID</th>
               <th>Name</th>
               <th>Hourly Rate</th>
-              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {employees.length > 0 ? employees.map((emp) => (
-              <tr key={emp.id}>
+              <tr key={emp.id} className={editingId === emp.id ? 'editing-row' : ''}>
                 <td className="emp-id">#{String(emp.id).padStart(4, '0')}</td>
-                <td className="emp-name">{emp.name}</td>
-                <td className="emp-rate">${parseFloat(emp.hourly_pay).toFixed(2)} / hr</td>
-                <td><span className="badge success">Active</span></td>
+                <td className="emp-name">
+                  {editingId === emp.id ? (
+                    <input 
+                      type="text" 
+                      className="edit-input" 
+                      value={editName} 
+                      onChange={(e) => setEditName(e.target.value)}
+                    />
+                  ) : emp.name}
+                </td>
+                <td className="emp-rate">
+                  {editingId === emp.id ? (
+                    <div className="edit-pay-container">
+                      <span>$</span>
+                      <input 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        className="edit-input mini" 
+                        value={editPay} 
+                        onChange={(e) => setEditPay(e.target.value)}
+                      />
+                    </div>
+                  ) : `$${parseFloat(emp.hourly_pay).toFixed(2)} / hr`}
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  {editingId === emp.id ? (
+                    <div className="edit-actions">
+                      <button className="btn-icon save" onClick={() => handleUpdate(emp.id)}><Check size={16} /></button>
+                      <button className="btn-icon cancel" onClick={cancelEdit}><X size={16} /></button>
+                    </div>
+                  ) : (
+                    <button className="btn-icon edit" onClick={() => startEdit(emp)}><Edit2 size={16} /></button>
+                  )}
+                </td>
               </tr>
             )) : (
               <tr>
@@ -157,9 +218,47 @@ const EmployeeManagement = ({ employees, onRefresh, getHeaders }) => {
         .emp-name { font-weight: 600; }
         .emp-rate { color: var(--text-muted); }
 
-        .badge.success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .editing-row { background: rgba(99, 102, 241, 0.05); }
 
-        .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+        .edit-input {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--glass-border);
+          border-radius: 6px;
+          padding: 6px 10px;
+          color: white;
+          width: 100%;
+        }
+
+        .edit-input.mini { width: 80px; margin-left: 4px; }
+        .edit-pay-container { display: flex; align-items: center; }
+
+        /* Hide number input spinners */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type="number"] {
+          -moz-appearance: textfield;
+        }
+
+        .btn-icon {
+          background: transparent;
+          border: 1px solid transparent;
+          padding: 6px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .btn-icon.edit:hover { background: rgba(99, 102, 241, 0.1); color: var(--primary); border-color: var(--primary); }
+        .btn-icon.save:hover { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: #10b981; }
+        .btn-icon.cancel:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444; }
+
+        .edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
         .animate-in {
           animation: slideDown 0.4s ease-out;

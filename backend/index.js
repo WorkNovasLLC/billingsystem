@@ -193,6 +193,23 @@ app.get('/api/employees', authenticate, async (req, res) => {
   }
 });
 
+// Update Employee
+app.put('/api/employees/:id', authenticate, async (req, res) => {
+  const { id } = req.params;
+  const { name, hourly_pay } = req.body;
+
+  if (!name || !hourly_pay) {
+    return res.status(400).json({ error: 'Name and Hourly Pay are required' });
+  }
+
+  try {
+    await pool.query('UPDATE employees SET name = $1, hourly_pay = $2 WHERE id = $3', [name, hourly_pay, id]);
+    res.json({ message: 'Employee updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Save Invoice (Blob/Bytea)
 app.post('/api/invoices', authenticate, async (req, res) => {
   const { invoice_number, pdf_blob } = req.body;
