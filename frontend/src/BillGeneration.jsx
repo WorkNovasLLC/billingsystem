@@ -9,7 +9,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { API_BASE } from './App';
 
 const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
@@ -36,12 +36,16 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
   };
 
   const calculateTotal = (emp) => {
-    return (emp.hourly_pay * (hoursData[emp.id] || 0)).toFixed(2);
+    const rate = Number(emp.hourly_pay) || 0;
+    const hours = hoursData[emp.id] || 0;
+    return (rate * hours).toFixed(2);
   };
 
   const calculateGrandTotal = () => {
     return selectedEmployees.reduce((sum, emp) => {
-      return sum + (emp.hourly_pay * (hoursData[emp.id] || 0));
+      const rate = Number(emp.hourly_pay) || 0;
+      const hours = hoursData[emp.id] || 0;
+      return sum + (rate * hours);
     }, 0).toFixed(2);
   };
 
@@ -69,12 +73,12 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
       const tableRows = selectedEmployees.map(emp => [
         `#00${emp.id}`,
         emp.name,
-        `$${emp.hourly_pay.toFixed(2)}/hr`,
+        `$${Number(emp.hourly_pay).toFixed(2)}/hr`,
         hoursData[emp.id] || 0,
         `$${calculateTotal(emp)}`
       ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 40,
         head: [['ID', 'Employee Name', 'Hourly Rate', 'Hours Worked', 'Subtotal']],
         body: tableRows,

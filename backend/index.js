@@ -4,14 +4,18 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 
 const app = express();
 const PORT = process.env.PORT || 5001;
-const JWT_SECRET = process.env.JWT_SECRET || 'worknovas_billing_secret_key_2024';
+const SESSION_SECRET = process.env.SESSION_SECRET || 'worknovas_billing_secret_key_2024';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'], // Update with your frontend port if different
+  credentials: true
+}));
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
@@ -25,6 +29,23 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false } // Required for Neon
 });
+
+// Session Configuration
+app.use(session({
+  store: new pgSession({
+    pool: pool,
+    tableName: 'session'
+  }),
+  secret: SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
+    secure: process.env.NODE_ENV === 'production', // set to true if using https
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // necessary for some cross-origin cookies
+    httpOnly: true
+  }
+}));
 
 // Tables Setup for PostgreSQL
 const initializeDB = async () => {
@@ -48,6 +69,20 @@ const initializeDB = async () => {
                 invoice_blob BYTEA NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS "session" (
+                "sid" varchar NOT NULL COLLATE "default",
+                "sess" json NOT NULL,
+                "expire" timestamp(6) NOT NULL
+            ) WITH (OIDS=FALSE);
+            
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'session_pkey') THEN
+                    ALTER TABLE "session" ADD CONSTRAINT "session_pkey" PRIMARY KEY ("sid") NOT DEFERRABLE INITIALLY IMMEDIATE;
+                END IF;
+            END $$;
+
+            CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
         `);
 
     // Seed default admins
@@ -96,9 +131,9 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT
-    const token = jwt.sign({ id: admin.id, login_id: admin.login_id }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ message: 'Login successful', token });
+    // Store user ID in session
+    req.session.user = { id: admin.id, login_id: admin.login_id };
+    res.json({ message: 'Login successful' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -106,19 +141,30 @@ app.post('/api/login', async (req, res) => {
 
 // Auth Middleware
 const authenticate = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    res.status(403).json({ error: 'Invalid token' });
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Access denied. Please login.' });
   }
+  req.user = req.session.user;
+  next();
 };
+
+// Check Auth Status
+app.get('/api/check-auth', (req, res) => {
+  if (req.session.user) {
+    res.json({ loggedIn: true, admin: req.session.user });
+  } else {
+    res.json({ loggedIn: false });
+  }
+});
+
+// Logout
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) return res.status(500).json({ error: 'Logout failed' });
+    res.clearCookie('connect.sid'); // default name for session cookie
+    res.json({ message: 'Logout successful' });
+  });
+});
 
 // --- Protected Routes ---
 

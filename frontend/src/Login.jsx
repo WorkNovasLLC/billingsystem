@@ -15,14 +15,12 @@ const Login = ({ onLogin }) => {
     setError('');
     
     try {
-      const response = await axios.post(`${API_BASE}/login`, {
+      await axios.post(`${API_BASE}/login`, {
         login_id: loginId,
         password: password
       });
       
-      const { token } = response.data;
-      localStorage.setItem('worknovas_token', token);
-      onLogin(token);
+      onLogin();
     } catch (err) {
       setError(err.response?.data?.error || "Login failed. Check credentials.");
     } finally {

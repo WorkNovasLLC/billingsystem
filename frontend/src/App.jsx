@@ -17,33 +17,52 @@ import InvoiceHistory from './InvoiceHistory';
 import Login from './Login';
 
 const API_BASE = 'http://localhost:5001/api';
+axios.defaults.withCredentials = true;
 console.log('API_BASE is:', API_BASE);
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [employees, setEmployees] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('worknovas_token'));
-  const [token, setToken] = useState(localStorage.getItem('worknovas_token'));
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
       fetchEmployees();
     }
-  }, [isLoggedIn, token]);
+  }, [isLoggedIn]);
 
-  const handleLogin = (newToken) => {
-    setToken(newToken);
+  const checkAuth = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/check-auth`);
+      setIsLoggedIn(response.data.loggedIn);
+    } catch (err) {
+      setIsLoggedIn(false);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const handleLogin = () => {
     setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('worknovas_token');
-    setIsLoggedIn(false);
-    setToken(null);
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API_BASE}/logout`);
+      setIsLoggedIn(false);
+    } catch (err) {
+      console.error('Logout failed:', err);
+      setIsLoggedIn(false);
+    }
   };
 
   const getHeaders = () => ({
-    headers: { Authorization: `Bearer ${token}` }
+    // Headers no longer needed for session auth (handled by cookies)
   });
 
   const fetchEmployees = async () => {
@@ -57,6 +76,10 @@ function App() {
       }
     }
   };
+
+  if (checkingAuth) {
+    return <div className="loading-screen">Verifying Session...</div>;
+  }
 
   // If not logged in, show login page exclusively
   if (!isLoggedIn) {
