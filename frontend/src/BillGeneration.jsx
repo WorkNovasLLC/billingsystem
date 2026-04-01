@@ -171,13 +171,21 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
 
       autoTable(doc, {
         startY: 150,
-        head: [['Sr.', 'Name', 'Qty', 'Rate ($)', 'Amount ($)']],
+        margin: { left: margin, right: margin },
+        head: [[
+          { content: 'Sr.', styles: { halign: 'left' } },
+          { content: 'Name', styles: { halign: 'left' } },
+          { content: 'Qty', styles: { halign: 'center' } },
+          { content: 'Rate ($)', styles: { halign: 'right' } },
+          { content: 'Amount ($)', styles: { halign: 'right' } }
+        ]],
         body: tableRows,
         theme: 'plain',
         headStyles: { fontStyle: 'bold', borderBottom: 1, borderColor: [200, 200, 200] },
         styles: { fontSize: 9, cellPadding: 3 },
         columnStyles: {
-          0: { cellWidth: 15 },
+          0: { cellWidth: 15, halign: 'left' },
+          1: { halign: 'left' },
           2: { cellWidth: 20, halign: 'center' },
           3: { cellWidth: 30, halign: 'right' },
           4: { cellWidth: 35, halign: 'right' }
@@ -193,8 +201,10 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
       const rightX = pageWidth - margin;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.text("Total Amount Due", rightX - 55, finalY);
-      doc.text(`$ ${calculateGrandTotal()}`, rightX, finalY, { align: 'right' });
+      // Align "Total Amount Due" label with the start of the Rate column (30+35=65 units from right)
+      doc.text("Total Amount Due", rightX - 65, finalY);
+      // Align the value with the Amount column's right edge (subtracting table padding of 3)
+      doc.text(`$${calculateGrandTotal()}`, rightX - 3, finalY, { align: 'right' });
 
       // Output and Save
       const pdfBase64 = doc.output('datauristring').split(',')[1];
