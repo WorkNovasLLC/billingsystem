@@ -190,10 +190,11 @@ const BillGeneration = ({ employees, onRefresh, getHeaders }) => {
       const finalY = doc.lastAutoTable.finalY + 10;
 
       // 7. Grand Total
+      const rightX = pageWidth - margin;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
-      doc.text("Total Amount Due", 130, finalY);
-      doc.text(`$ ${calculateGrandTotal()}`, 180, finalY, { align: 'right' });
+      doc.text("Total Amount Due", rightX - 55, finalY);
+      doc.text(`$ ${calculateGrandTotal()}`, rightX, finalY, { align: 'right' });
 
       // Output and Save
       const pdfBase64 = doc.output('datauristring').split(',')[1];
